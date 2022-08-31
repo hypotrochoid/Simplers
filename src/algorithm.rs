@@ -16,6 +16,8 @@ pub struct Optimizer<'f_lifetime, CoordFloat: Float, ValueFloat: Float>
     search_space: SearchSpace<'f_lifetime, CoordFloat, ValueFloat>,
     best_point: Rc<Point<CoordFloat, ValueFloat>>,
     min_value: ValueFloat,
+    current_simplex: Option<Simplex<CoordFloat, ValueFloat>>,
+    current_difference: Option<ValueFloat>,
     queue: PriorityQueue<Simplex<CoordFloat, ValueFloat>, OrderedFloat<ValueFloat>>
 }
 
@@ -74,7 +76,7 @@ impl<'f_lifetime, CoordFloat: Float, ValueFloat: Float> Optimizer<'f_lifetime, C
         queue.push(initial_simplex, OrderedFloat(ValueFloat::zero()));
 
         let exploration_depth = ValueFloat::from(6.).unwrap();
-        Optimizer { exploration_depth, search_space, best_point, min_value, queue }
+        Optimizer { exploration_depth, search_space, best_point, min_value, current_simplex: None, queue, current_difference: None }
     }
 
     /// Sets the exploration depth for the algorithm, useful when using the iterator interface.
@@ -169,17 +171,10 @@ impl<'f_lifetime, CoordFloat: Float, ValueFloat: Float> Optimizer<'f_lifetime, C
         Optimizer::new(f, input_interval, should_minimize).nth(nb_iterations - initial_iteration_number)
                                                           .unwrap()
     }
-}
 
-/// implements iterator for the Optimizer to give full control on the stopping condition to the user
-impl<'f_lifetime, CoordFloat: Float, ValueFloat: Float> Iterator
-    for Optimizer<'f_lifetime, CoordFloat, ValueFloat>
-{
-    type Item = (ValueFloat, Coordinates<CoordFloat>);
-
-    /// runs an iteration of the optimization algorithm and returns the best result so far
-    fn next(&mut self) -> Option<Self::Item>
-    {
+    /// The next point which will be evaluated.
+    /// Allows pre-empting function evaluation.
+    pub fn next_explore_point(&mut self) -> Coordinates<CoordFloat> {
         // gets the exploration depth for later use
         let exploration_depth = self.exploration_depth;
 
@@ -196,8 +191,39 @@ impl<'f_lifetime, CoordFloat: Float, ValueFloat: Float> Iterator
             simplex = self.queue.pop().expect("Impossible: The queue cannot be empty!").0;
         }
 
+        self.current_simplex = Some(simplex);
+        self.current_difference = Some(current_difference);
         // evaluate the center of the simplex
-        let coordinates = simplex.center.clone();
+        self.current_simplex.as_ref().unwrap().center.clone()
+    }
+}
+
+/// implements iterator for the Optimizer to give full control on the stopping condition to the user
+impl<'f_lifetime, CoordFloat: Float, ValueFloat: Float> Iterator
+    for Optimizer<'f_lifetime, CoordFloat, ValueFloat>
+{
+    type Item = (ValueFloat, Coordinates<CoordFloat>);
+
+    /// runs an iteration of the optimization algorithm and returns the best result so far
+    fn next(&mut self) -> Option<Self::Item>
+    {
+        let exploration_depth = self.exploration_depth;
+        // evaluate the center of the simplex
+        let simplex = if let Some(existing_simplex) = &self.current_simplex {
+            // the next explore point has been calculated already
+            existing_simplex
+        } else {
+            // need to calculate it first
+            self.next_explore_point();
+            self.current_simplex.as_ref().unwrap()
+        }.clone();
+        let current_difference = self.current_difference.unwrap();
+        // current simplex is consumed
+        self.current_simplex = None;
+        self.current_difference = None;
+
+        let coordinates= simplex.center.clone();
+
         let value = self.search_space.evaluate(&coordinates);
         let new_point = Rc::new(Point { coordinates, value });
 
