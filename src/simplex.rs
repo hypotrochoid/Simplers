@@ -29,7 +29,7 @@ impl<CoordFloat: Float, ValueFloat: Float> Simplex<CoordFloat, ValueFloat>
     }
 
     /// builds the initial unit simplex with one point per axis plus an origin at zero
-    pub fn initial_simplex(search_space: &SearchSpace<CoordFloat, ValueFloat>) -> Self
+    pub fn initial_simplex(search_space: &SearchSpace<CoordFloat>) -> Self
     {
         // origin, a vector of zero
         let origin = vec![CoordFloat::zero(); search_space.dimension].into_boxed_slice();
@@ -38,14 +38,17 @@ impl<CoordFloat: Float, ValueFloat: Float> Simplex<CoordFloat, ValueFloat>
         let mut corners: Vec<_> = (0..search_space.dimension).map(|i| {
                                                                  let mut coordinates = origin.clone();
                                                                  coordinates[i] = CoordFloat::one();
-                                                                 let value =
-                                                                     search_space.evaluate(&coordinates);
+                                                                 let value = ValueFloat::zero();
+//                                                                     search_space.evaluate(&coordinates);
                                                                  Rc::new(Point { coordinates, value })
                                                              })
                                                              .collect();
 
         // adds the corner corresponding to the origin
-        let min_corner = Point { value: search_space.evaluate(&origin), coordinates: origin };
+        let min_corner = Point {
+//            value: search_space.evaluate(&origin),
+            value: ValueFloat::zero(),
+            coordinates: origin };
         corners.push(Rc::new(min_corner));
 
         // assemble the simplex

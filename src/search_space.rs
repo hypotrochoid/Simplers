@@ -3,24 +3,20 @@ use ordered_float::OrderedFloat;
 use num_traits::Float;
 
 /// encapsulate a function and its domain of definition
-pub struct SearchSpace<'f_lifetime, CoordFloat: Float, ValueFloat: Float>
+pub struct SearchSpace<CoordFloat>
 {
-    f: &'f_lifetime dyn Fn(&[CoordFloat]) -> ValueFloat,
     hypercube: Vec<(CoordFloat, CoordFloat)>,
-    pub minimize: bool,
     pub dimension: usize
 }
 
-impl<'f_lifetime, CoordFloat: Float, ValueFloat: Float> SearchSpace<'f_lifetime, CoordFloat, ValueFloat>
+impl<CoordFloat: Float> SearchSpace< CoordFloat>
 {
     /// builds a new search space that encapsulate both the function to evaluate and its domain of definition
-    pub fn new(f: &'f_lifetime impl Fn(&[CoordFloat]) -> ValueFloat,
-               hypercube: &[(CoordFloat, CoordFloat)],
-               minimize: bool)
+    pub fn new(hypercube: &[(CoordFloat, CoordFloat)])
                -> Self
     {
         let dimension = hypercube.len();
-        SearchSpace { f, hypercube: hypercube.to_vec(), minimize, dimension }
+        SearchSpace { hypercube: hypercube.to_vec(), dimension }
     }
 
     /// Converts coordinates from the hypercube to the unit simplex
@@ -54,20 +50,5 @@ impl<'f_lifetime, CoordFloat: Float, ValueFloat: Float> SearchSpace<'f_lifetime,
         let ratio = if max.is_zero() { CoordFloat::zero() } else { sum / max };
         // goes from the simplex to the target hypercube
         c.iter().zip(self.hypercube.iter()).map(|(&x, &(inf, sup))| inf + x * ratio * (sup - inf)).collect()
-    }
-
-    /// takes coordinates in the unit simplex and evaluate them with the function
-    pub fn evaluate(&self, c: &Coordinates<CoordFloat>) -> ValueFloat
-    {
-        let c_hypercube = self.to_hypercube(c.clone());
-        let evaluation = (self.f)(&c_hypercube);
-        if self.minimize
-        {
-            -evaluation
-        }
-        else
-        {
-            evaluation
-        }
     }
 }
