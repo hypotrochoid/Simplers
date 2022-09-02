@@ -224,14 +224,23 @@ impl<CoordFloat: Float, ValueFloat: Float> Optimizer<CoordFloat, ValueFloat>
         // gets an up to date simplex
         let mut simplex = self.queue.pop().expect("Impossible: The queue cannot be empty!").0;
         let current_difference = self.best_point.value - self.min_value;
-        while simplex.difference != current_difference
+        let mut n_iter = 0;
+        let max_iter = self.queue.len();
+        while (simplex.difference != current_difference) && (n_iter < max_iter)
         {
-            // updates the simplex and pushes it back into the queue
             simplex.difference = current_difference;
             let new_evaluation = simplex.evaluate(exploration_depth);
+            let cleaned_evaluation = if new_evaluation >= ValueFloat::max_value() {
+                self.best_point.value
+            } else if new_evaluation <= ValueFloat::min_value() {
+                self.min_value
+            } else {
+                new_evaluation
+            };
             self.queue.push(simplex, OrderedFloat(new_evaluation));
             // pops a new simplex
             simplex = self.queue.pop().expect("Impossible: The queue cannot be empty!").0;
+            n_iter += 1;
         }
 
         self.current_simplex = Some(simplex);

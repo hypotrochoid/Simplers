@@ -102,14 +102,14 @@ impl<CoordFloat: Float, ValueFloat: Float> Simplex<CoordFloat, ValueFloat>
                 .map(|c| ValueFloat::one() / Point::distance(&c.coordinates, &self.center))
                 .collect();
         let total_inverse_distance: ValueFloat =
-            inverse_distances.iter().copied().fold(ValueFloat::zero(), ::std::ops::Add::add);
+            inverse_distances.iter().copied().fold(ValueFloat::zero(), std::ops::Add::add);
 
         // computes the value of the center, interpolated from the corners
         let interpolated_value = self.corners
                                      .iter()
                                      .zip(inverse_distances.iter())
                                      .map(|(c, &d)| c.value * d)
-                                     .fold(ValueFloat::zero(), ::std::ops::Add::add)
+                                     .fold(ValueFloat::zero(), std::ops::Add::add)
                                  / total_inverse_distance;
 
         // computes the number of split needed to reach the given ratio if we start from a regular simplex
