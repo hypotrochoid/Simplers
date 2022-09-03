@@ -96,22 +96,25 @@ impl<CoordFloat: Float, ValueFloat: Float> Simplex<CoordFloat, ValueFloat>
     pub fn evaluate(&self, exploration_depth: ValueFloat) -> ValueFloat
     {
         // computes the inverse of the distance from the center to each corner
-        let inverse_distances: Vec<ValueFloat> =
+        let (total_inverse_distance, weighted_value) =
             self.corners
                 .iter()
-                .map(|c| ValueFloat::one() / Point::distance(&c.coordinates, &self.center))
-                .collect();
-        let total_inverse_distance: ValueFloat =
-            inverse_distances.iter().copied().fold(ValueFloat::zero(), std::ops::Add::add);
+                .map(|c| (ValueFloat::one() / Point::distance(&c.coordinates, &self.center), c.value))
+                .fold(
+                    (ValueFloat::zero(), ValueFloat::zero()),
+                    |(dist_acc, weighted), (dist, value)|
+                        if (value.is_finite()) {
+                            (dist_acc + dist, weighted + value * dist)
+                        } else {
+                            (dist_acc, weighted)
+                        });
 
-        // computes the value of the center, interpolated from the corners
-        let interpolated_value = self.corners
-                                     .iter()
-                                     .zip(inverse_distances.iter())
-                                     .map(|(c, &d)| c.value * d)
-                                     .fold(ValueFloat::zero(), std::ops::Add::add)
-                                 / total_inverse_distance;
-
+        let interpolated_value = if total_inverse_distance <= ValueFloat::zero() {
+            // all values not finite
+            ValueFloat::min_value()
+        } else {
+            weighted_value / total_inverse_distance
+        };
         // computes the number of split needed to reach the given ratio if we start from a regular simplex
         let dim = ValueFloat::from(self.center.len()).unwrap();
         let split_number = self.ratio.log(dim + ValueFloat::one()).abs();

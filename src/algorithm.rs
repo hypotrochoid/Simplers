@@ -1,4 +1,3 @@
-use std::borrow::Borrow;
 use crate::point::*;
 use crate::simplex::*;
 use crate::search_space::*;
@@ -62,7 +61,7 @@ impl<CoordFloat: Float, ValueFloat: Float> Optimizer<CoordFloat, ValueFloat>
 
         // initialize priority queue
         // no need to evaluate the initial simplex as it will be poped immediatly
-        let mut queue: PriorityQueue<Simplex<CoordFloat, ValueFloat>, OrderedFloat<ValueFloat>> =
+        let queue: PriorityQueue<Simplex<CoordFloat, ValueFloat>, OrderedFloat<ValueFloat>> =
             PriorityQueue::new();
 
         let exploration_depth = ValueFloat::from(6.).unwrap();
@@ -82,7 +81,7 @@ impl<CoordFloat: Float, ValueFloat: Float> Optimizer<CoordFloat, ValueFloat>
     // }
 
     fn finalize_initial_simplex(&mut self) {
-        if let Some((dim, simplex)) = self.in_progress_simplex.as_ref() {
+        if let Some((_dim, simplex)) = self.in_progress_simplex.as_ref() {
             // various values track through the iterations
             let best_point = simplex.corners
                 .iter()
@@ -237,7 +236,7 @@ impl<CoordFloat: Float, ValueFloat: Float> Optimizer<CoordFloat, ValueFloat>
             } else {
                 new_evaluation
             };
-            self.queue.push(simplex, OrderedFloat(new_evaluation));
+            self.queue.push(simplex, OrderedFloat(cleaned_evaluation));
             // pops a new simplex
             simplex = self.queue.pop().expect("Impossible: The queue cannot be empty!").0;
             n_iter += 1;
