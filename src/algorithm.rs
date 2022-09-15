@@ -214,7 +214,7 @@ impl<CoordFloat: Float, ValueFloat: Float> Optimizer<CoordFloat, ValueFloat>
     /// Allows pre-empting function evaluation.
     pub fn next_explore_point(&mut self) -> Coordinates<CoordFloat> {
         if let Some((dim, simplex)) = self.in_progress_simplex.as_ref() {
-            return simplex.corners[*dim].coordinates.clone()
+            return self.search_space.to_hypercube(simplex.corners[*dim].coordinates.clone())
         }
 
         // gets the exploration depth for later use
@@ -253,7 +253,7 @@ impl<CoordFloat: Float, ValueFloat: Float> Optimizer<CoordFloat, ValueFloat>
         if self.in_progress_simplex.is_some(){
             let next_corner = self.step_in_progress_simplex(value);
 
-            return (self.best_point.value, self.best_point.coordinates.clone());
+            return (self.best_point.value, self.search_space.to_hypercube(self.best_point.coordinates.clone()));
         }
 
         let exploration_depth = self.exploration_depth;
