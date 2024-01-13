@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 use num_traits::Float;
 
 /// Represents coordinates in space.
@@ -32,7 +32,7 @@ impl<CoordFloat: Float, ValueFloat: Float> Point<CoordFloat, ValueFloat>
     }
 
     /// computes the average of the coordinates
-    pub fn average_coordinate(points: &[Rc<Point<CoordFloat, ValueFloat>>]) -> Coordinates<CoordFloat>
+    pub fn average_coordinate(points: &[Arc<Point<CoordFloat, ValueFloat>>]) -> Coordinates<CoordFloat>
     {
         let length = CoordFloat::from(points.len()).expect("Unable to convert from usize to value type.");
         let mut points = points.iter();

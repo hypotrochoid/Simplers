@@ -1,7 +1,7 @@
 use crate::point::*;
 use crate::search_space::*;
 use std::hash::{Hash, Hasher};
-use std::rc::Rc;
+use std::sync::Arc;
 use num_traits::Float;
 
 /// represents a simplex
@@ -9,7 +9,7 @@ use num_traits::Float;
 pub struct Simplex<CoordFloat: Float, ValueFloat: Float>
 {
     /// the coordinate+evaluations of the corners of the simplex
-    pub corners: Vec<Rc<Point<CoordFloat, ValueFloat>>>,
+    pub corners: Vec<Arc<Point<CoordFloat, ValueFloat>>>,
     /// the coordinates of the center of the simplex (which is where it is evaluated)
     pub center: Coordinates<CoordFloat>,
     /// what was the difference between the best value and the worst value when the simplex was last evaluated ?
@@ -21,7 +21,7 @@ pub struct Simplex<CoordFloat: Float, ValueFloat: Float>
 impl<CoordFloat: Float, ValueFloat: Float> Simplex<CoordFloat, ValueFloat>
 {
     /// creates a new simplex
-    fn new(corners: Vec<Rc<Point<CoordFloat, ValueFloat>>>, ratio: ValueFloat, difference: ValueFloat)
+    fn new(corners: Vec<Arc<Point<CoordFloat, ValueFloat>>>, ratio: ValueFloat, difference: ValueFloat)
            -> Self
     {
         let center = Point::average_coordinate(&corners);
@@ -40,7 +40,7 @@ impl<CoordFloat: Float, ValueFloat: Float> Simplex<CoordFloat, ValueFloat>
                                                                  coordinates[i] = CoordFloat::one();
                                                                  let value = ValueFloat::zero();
 //                                                                     search_space.evaluate(&coordinates);
-                                                                 Rc::new(Point { coordinates, value })
+                                                                 Arc::new(Point { coordinates, value })
                                                              })
                                                              .collect();
 
@@ -49,7 +49,7 @@ impl<CoordFloat: Float, ValueFloat: Float> Simplex<CoordFloat, ValueFloat>
 //            value: search_space.evaluate(&origin),
             value: ValueFloat::zero(),
             coordinates: origin };
-        corners.push(Rc::new(min_corner));
+        corners.push(Arc::new(min_corner));
 
         // assemble the simplex
         Simplex::new(corners, ValueFloat::one(), ValueFloat::zero())
@@ -57,7 +57,7 @@ impl<CoordFloat: Float, ValueFloat: Float> Simplex<CoordFloat, ValueFloat>
 
     /// takes a simplex and splits it around a point
     /// difference is the best value so far minus the worst value so far
-    pub fn split(self, new_point: Rc<Point<CoordFloat, ValueFloat>>, difference: ValueFloat) -> Vec<Self>
+    pub fn split(self, new_point: Arc<Point<CoordFloat, ValueFloat>>, difference: ValueFloat) -> Vec<Self>
     {
         // computes the distance between the new point and each corners of the simplex
         let distances: Box<[ValueFloat]> = self.corners

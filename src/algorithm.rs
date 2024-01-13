@@ -4,7 +4,7 @@ use crate::search_space::*;
 use priority_queue::PriorityQueue;
 use ordered_float::OrderedFloat;
 use num_traits::Float;
-use std::rc::Rc;
+use std::sync::Arc;
 
 /// Stores the parameters and current state of a search.
 ///
@@ -16,7 +16,7 @@ pub struct Optimizer<CoordFloat: Float, ValueFloat: Float>
     minimize: bool,
 //    f: Option<&'f_lifetime dyn Fn(&[CoordFloat]) -> ValueFloat>,
     search_space: SearchSpace<CoordFloat>,
-    best_point: Rc<Point<CoordFloat, ValueFloat>>,
+    best_point: Arc<Point<CoordFloat, ValueFloat>>,
     min_value: ValueFloat,
     in_progress_simplex: Option<(usize, Simplex<CoordFloat, ValueFloat>)>,
     current_simplex: Option<Simplex<CoordFloat, ValueFloat>>,
@@ -105,7 +105,7 @@ impl<CoordFloat: Float, ValueFloat: Float> Optimizer<CoordFloat, ValueFloat>
     fn step_in_progress_simplex(&mut self, value: ValueFloat) -> Option<Coordinates<CoordFloat>> {
         if let Some((dim, simplex)) = self.in_progress_simplex.as_mut() {
             let coordinates = simplex.corners[*dim].coordinates.clone();
-            simplex.corners[*dim] = Rc::new(Point { coordinates, value });
+            simplex.corners[*dim] = Arc::new(Point { coordinates, value });
 
             *dim += 1;
             if *dim < simplex.corners.len() {
@@ -273,7 +273,7 @@ impl<CoordFloat: Float, ValueFloat: Float> Optimizer<CoordFloat, ValueFloat>
 
         let coordinates= simplex.center.clone();
 
-        let new_point = Rc::new(Point { coordinates, value });
+        let new_point = Arc::new(Point { coordinates, value });
 
         // splits the simplex around its center and push the subsimplex into the queue
         simplex.split(new_point.clone(), current_difference)
@@ -329,7 +329,7 @@ impl<CoordFloat: Float, ValueFloat: Float> Optimizer<CoordFloat, ValueFloat>
 //         let coordinates= simplex.center.clone();
 //
 //         let value = self.search_space.evaluate(&coordinates);
-//         let new_point = Rc::new(Point { coordinates, value });
+//         let new_point = Arc::new(Point { coordinates, value });
 //
 //         // splits the simplex around its center and push the subsimplex into the queue
 //         simplex.split(new_point.clone(), current_difference)
